@@ -4,6 +4,7 @@
  */
 
 #include <os/sddf.h>
+#include <stdint.h>
 #include <sddf/serial/queue.h>
 #include <sddf/serial/config.h>
 #include <sddf/util/printf.h>
@@ -30,7 +31,6 @@ void init(void)
     serial_queue_init(&rx_queue_handle, serial_config.rx.queue.vaddr, serial_config.rx.data.size, serial_config.rx.data.vaddr);
     serial_queue_init(&tx_queue_handle, serial_config.tx.queue.vaddr, serial_config.tx.data.size, serial_config.tx.data.vaddr);
     serial_putchar_init(serial_config.tx.id, &tx_queue_handle);
-    sddf_printf("Key map region vaddr: %p\n", s_config.key_share_page);
     sddf_printf("(%s) Enter key...\n", sddf_get_pd_name());
 }
 

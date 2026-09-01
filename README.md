@@ -6,9 +6,39 @@
 
 # Acacia sDDF demo
 
-This demo showcases the usage of Acacia for the seL4 Summit 2026. The demo system
+This demo showcases the usage of [Acacia](https://github.com/au-ts/microkit_acacia/) for the seL4 Summit 2026. The demo system
 is a simple Acacia subsystem demonstrating how to exercise most Microkit primitives
 and how to utilise drivers from the sDDF using Acacia.
+
+![Diagram](./demo_arch.png)
+
+## Dependencies
+
+### Build system and QEMU
+
+On apt based Linux distributions run the following commands:
+
+```sh
+sudo apt install make clang llvm lld device-tree-compiler python3 python3-pip gcc-aarch64-linux-gnu qemu-system-arm
+```
+
+On macOS, you can install the dependencies via Homebrew:
+```sh
+brew install llvm lld make dtc python3 qemu
+```
+(You may also need to add llvm to your PATH, something like `export PATH=$PATH:/opt/homebrew/Cellar/llvm/20.1.8/bin` ... the path will vary depending on your system).
+
+### Microkit
+
+You also need a copy of the seL4 Microkit for your system. Download a copy for your architecture
+and OS @ https://github.com/seL4/microkit/releases/tag/2.3.0.
+
+Extract the archive and use the absolute path to the extracted files when invoking Make.
+
+### sDDF and Acacia
+
+The `Makefile` in this project will automatically download and install the sDDF and Acacia.
+
 
 ## Building
 
@@ -19,6 +49,12 @@ The following platforms are supported:
 
 ### Make
 
+To run the demo:
+```sh
+make MICROKIT_BOARD=qemu_virt_aarch64 MICROKIT_SDK=${MICROKIT_PATH} MICROKIT_CONFIG=debug qemu
+```
+
+More generally:
 ```sh
 make MICROKIT_SDK=<path/to/sdk> MICROKIT_BOARD=<board> MICROKIT_CONFIG=<debug/release/benchmark>
 ```
@@ -29,73 +65,20 @@ If you wish to simulate on one of the QEMU platforms (qemu_virt_aarch64 or
 qemu_virt_riscv64), you can append `qemu` to your make command to start QEMU
 after everything compiles.
 
-## Running/using
-
-When running the example in debug mode you should see the following output from
-the serial transmit virtualiser upon booting, showing which client is associated
-with which colour:
-```sh
-Begin input
-'client0' is client 0
-'client1' is client 1
-```
-
-This will be followed by initialisation output from each of the serial clients
-printed in their respective colour:
-```sh
-Hello world! I am client1.
-Please give me character!
-Hello world! I am client0.
-Please give me character!
-```
-
-When typing in characters into your terminal, they will by default be directed
-to client 0. Upon receiving a character, client 0 will echo it. After receiving
-10 characters, client 0 will print:
-```sh
-client0 has received 10 characters so far!
-```
-
-Client 1 is a clone of client 0, and will behave the same way. To switch
-clients, enter:
-```sh
-CTRL + \, <client number>, \r
-```
-
-For example, to switch to client 1, enter:
-```sh
-CTRL + \, 1, \r
-```
-
-If in debug mode, you should see the following output when doing so:
-```sh
-VIRT_RX|LOG: switching to client 1
-```
 
 ## Description
 
-The serial example system contains two clients which are both able to transmit
-and receive characters over serial. The clients are based on the same executable
-generated from `examples/serial/client.c`.
+This example demonstrates the creation of a simple Acacia subsystem, showcasing:
+* Creation of PDs, MRs, channels inside of a subsystem,
+* Creating connections with clients in the form of channels,
+* Composing a subsystem using other subsystems, i.e. having our subsystem use the sDDF serial and timer subsystem,
+* Creating configuration structs and showing how to pass data from Acacia to compiled C programs.
 
-Each serial client demonstrates two methods of outputting to serial: the first
-uses `sddf_printf` (linked with `_sddf_putchar` defined in
-`util/putchar_serial.c`), and the second uses `sddf_putchar_unbuffered` defined
-in the same file.
+The subsystem contains two PDs: a serial interface and a secret server.
+* The serial interface accepts user input from the sDDF serial class and forwards it to the secret server as a key when Enter is pressed.
+* The secret server compares the key against a stored secret. If the key matches, the secret server prints its secret message and notifies all clients. Otherwise, it will time out for some amount of time and block the serial interface from being able to accept new data.
 
-The first method demonstrates character buffering before output to the transmit
-virtualiser based on a flush character or queue capacity, the second
-demonstrates characters being transmitted in an unbuffered fashion, typically
-used by a REPL.
-
-Each serial client sits in an event loop, awaiting notification from the receive
-virtualiser. When a notification is received, the client outputs the character
-in an unbuffered fashion. Every 10 characters the client prints a message in a
-buffered fashion.
-
-In this example, `enable_color` is set to `True` (which is on by default when
-creating a serial subsystem using a Python metaprogram) so each client prints
-with a different colour.
+The clients are extremely simple, they just await a notification and print a success message when it comes.
 
 ## Documentation
 

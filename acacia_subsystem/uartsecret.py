@@ -1,8 +1,4 @@
-from re import A
-from socket import timeout
-from typing import override
-
-from acacia_sddf import sDDFSerial
+from acacia_sddf import sDDFSerial, sDDFTimer
 
 from acacia import (
     Channel,
@@ -47,7 +43,7 @@ class UartSecretSystem(Subsystem):
 
         # Create channel between PDs
         self.secret_ch = Channel(
-            self.sdf,  # set by super()
+            self.sdf,
             Channel.End(self.serialserver, can_notify=False, can_pp=True),
             Channel.End(self.secretserver, can_notify=False, can_pp=False),
         )

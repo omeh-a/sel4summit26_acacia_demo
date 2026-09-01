@@ -58,9 +58,7 @@ static inline void punish(void)
 }
 
 static inline void success(void) {
-    // Print secret & kick serial server to make sure we print now.
     sddf_printf("(%s) SECRET=%s\n", sddf_get_pd_name(), s_config.secret);
-    microkit_notify(serial_config.tx.id);
 
     // Notify clients!
     for (size_t i=0; i < s_config.num_clients; i++) {
