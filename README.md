@@ -80,7 +80,8 @@ The subsystem contains two PDs: a serial interface and a secret server.
 
 The clients are extremely simple, they just await a notification and print a success message when it comes.
 
-## Documentation
+## More info
 
-Further documentation for the serial subsystem can be found in the [developer
-docs](/docs/serial/serial.md).
+See:
+* [sDDF](https://github.com/au-ts/sddf)
+* [Acacia](https://github.com/au-ts/microkit_acacia/)

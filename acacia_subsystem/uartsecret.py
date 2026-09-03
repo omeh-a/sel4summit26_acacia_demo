@@ -1,9 +1,10 @@
+# Copyright 2026, UNSW
+# SPDX-License-Identifier: BSD-2-Clause
 from acacia_sddf import sDDFSerial, sDDFTimer
 
 from acacia import (
     Channel,
     ConfigStruct,
-    Map,
     MemoryRegion,
     ProtectionDomain,
     Subsystem,
@@ -17,7 +18,7 @@ MAX_CLIENTS = 62
 class UartSecretSystem(Subsystem):
     def __init__(
         self,
-        sdf: System,
+        acacia_system: System,
         serial: sDDFSerial,
         timer: sDDFTimer,
         key: str,
@@ -29,27 +30,28 @@ class UartSecretSystem(Subsystem):
         self.key = key
         self.secret = secret
         self.timeout = timeout_secs
+        self.acacia_system = acacia_system
 
-        # Initialise subsystem
-        super().__init__(sdf, f"uartsecret_{key}", True)
+        # Initialise subsystem - tell Acacia this exists and has a name.
+        super().__init__(acacia_system, f"uartsecret_{key}")
 
         # Create PDs
         self.secretserver = ProtectionDomain(
-            sdf, f"{self.name}_secret", secret_elf, priority=50
+            acacia_system, f"{self.name}_secret", secret_elf, priority=50
         )
         self.serialserver = ProtectionDomain(
-            sdf, f"{self.name}_serial", serialserver_elf, priority=49
+            acacia_system, f"{self.name}_serial", serialserver_elf, priority=49
         )
 
-        # Create channel between PDs
+        # Create channel between PDs. Serial server can PPC to secret server, nothing else.
         self.secret_ch = Channel(
-            self.sdf,
+            self.acacia_system,
             Channel.End(self.serialserver, can_notify=False, can_pp=True),
             Channel.End(self.secretserver, can_notify=False, can_pp=False),
         )
 
         # Create shared memory region between PDs and map it into each
-        secret_mr = MemoryRegion(sdf, f"{self.name}_secret", SECRET_PAGE_SZ)
+        secret_mr = MemoryRegion(acacia_system, f"{self.name}_secret", SECRET_PAGE_SZ)
 
         # Automap maps region into vspace of PD and returns the map object.
         self.secretserver_vaddr = self.secretserver.create_automap(secret_mr, "r").vaddr
@@ -65,12 +67,12 @@ class UartSecretSystem(Subsystem):
     def connect_clients(self):
         # Create a channel to each client for the secret server to notify them.
         # Only store the channel ID of the client seen by secretserver, since we
-        # don't need the channel object itself (stored in self.sdf!)
+        # don't need the channel object itself (stored in self.acacia_system!)
         self.client_channel_ids: List[int] = [
             Channel(
-                self.sdf,
+                self.acacia_system,
                 Channel.End(self.secretserver, can_pp=False, can_notify=True),
-                Channel.End(c, can_pp=False, can_notify=True),
+                Channel.End(c, can_pp=False, can_notify=False),
             ).id_for_pd(self.secretserver)
             for c in self.clients
         ]

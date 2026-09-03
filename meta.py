@@ -3,10 +3,10 @@
 import argparse
 import os
 import sys
-from dataclasses import dataclass
-from typing import List
 
-# Add local Acacia module, sDDF Acacia module and Acacia itself
+# Add local Acacia module, sDDF Acacia module and Acacia itself.
+# Usually you would import this directly, but this demo is built to prevent you
+# needing to install any dependencies except Microkit :)
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "acacia"))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "sddf"))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +30,11 @@ def generate(sdf_file: System, output_dir: str):
         allow_rx=True,
     )
     timer = sDDFTimer(sdf, board.timer.compatible, board.timer.node_path)
-    secret_a = UartSecretSystem(sdf, serial, timer, key="proof", secret="performance")
+
+    # Our new module!
+    secret_a = UartSecretSystem(
+        sdf, serial, timer, key="proof", secret="performance"
+    )
 
     for pd in [client0, client1]:
         secret_a.add_client(pd)
@@ -49,11 +53,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # We use the sDDF boards system to select device trees
     board = next(filter(lambda b: b.name == args.board, BOARDS))
-
-    if board.arch == x86_64:
-        dtb = None  # x86 has no DTB.
-        raise NotImplementedError("This demo hasn't been tested with x86!")
     dtb = DeviceTreeBlob(args.dtb)
     sdf = System(board.arch, board.paddr_top, dtb)
 
